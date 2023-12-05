@@ -2,7 +2,13 @@
 
 import { Document, Page, pdfjs } from 'react-pdf';
 import { toast } from './ui/use-toast';
-import { ChevronDown, ChevronUp, Loader2, Search } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  RotateCw,
+  Search,
+} from 'lucide-react';
 import { useState } from 'react';
 
 import { useResizeDetector } from 'react-resize-detector';
@@ -25,6 +31,7 @@ import {
 import SimpleBar from 'simplebar-react';
 
 import 'simplebar-react/dist/simplebar.min.css';
+import PdfFullScreen from './PdfFullScreen';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
@@ -35,8 +42,11 @@ interface PdfRendererProps {
 const PdfRenderer = ({ url }: PdfRendererProps) => {
   const [numPages, setNumPages] = useState<number>();
   const [currPage, setCurrPage] = useState<number>(1);
-
   const [scale, setScale] = useState<number>(1);
+  const [rotation, setRotation] = useState<number>(0);
+  const [renderedScale, setRenderedScale] = useState<number | null>(null);
+
+  const isLoading = renderedScale !== scale;
 
   const { width, ref } = useResizeDetector();
 
@@ -139,6 +149,16 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Button
+            onClick={() => setRotation((prev) => prev + 90)}
+            variant="ghost"
+            aria-label="rotate 90 degrees"
+          >
+            <RotateCw className="h-4 w-4" />
+          </Button>
+
+          <PdfFullScreen fileUrl={url} />
         </div>
       </div>
 
@@ -161,7 +181,30 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
               }}
               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
             >
-              <Page pageNumber={currPage} width={width} scale={scale} />
+              {isLoading && renderedScale ? (
+                <Page
+                  width={width ? width : 1}
+                  pageNumber={currPage}
+                  scale={scale}
+                  rotate={rotation}
+                  key={'@' + renderedScale}
+                />
+              ) : null}
+
+              <Page
+                className={cn(isLoading ? 'hidden' : '')}
+                pageNumber={currPage}
+                width={width}
+                scale={scale}
+                key={'@' + scale}
+                rotate={rotation}
+                loading={
+                  <div className="flex justify-center">
+                    <Loader2 className="my-24 h-6 w-6 animate-spin" />
+                  </div>
+                }
+                onRenderSuccess={() => setRenderedScale(scale)}
+              />
             </Document>
           </div>
         </SimpleBar>
