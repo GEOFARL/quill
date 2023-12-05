@@ -15,6 +15,20 @@ const Dashboard = () => {
   >(null);
   const { data: files, isLoading } = trpc.getUserFiles.useQuery();
 
+  const utils = trpc.useUtils();
+
+  const { mutate: deleteFile } = trpc.deleteFile.useMutation({
+    onSuccess: () => {
+      utils.getUserFiles.invalidate();
+    },
+    onMutate({ id }) {
+      setCurrentlyDeletingFile(id);
+    },
+    onSettled() {
+      setCurrentlyDeletingFile(null);
+    },
+  });
+
   return (
     <main className="mx-auto max-w-7xl md:p-10">
       <div className="mt-8 flex flex-col items-start justify-between gap-4 border-b border-gray-200 pb-5 sm:flex-row sm:items-center sm:gap-0">
@@ -65,7 +79,7 @@ const Dashboard = () => {
                   </div>
 
                   <Button
-                    onClick={() => console.log('deleting')}
+                    onClick={() => deleteFile({ id: file.id })}
                     size="sm"
                     className="w-full"
                     variant="destructive"
